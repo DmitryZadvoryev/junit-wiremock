@@ -1,6 +1,7 @@
+package ru.zadvoryev;
+
 import com.github.tomakehurst.wiremock.WireMockServer;
 import io.restassured.response.Response;
-import org.apache.http.HttpStatus;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
@@ -11,8 +12,9 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static io.restassured.RestAssured.given;
+import static ru.zadvoryev.Constants.NOT_FOUND;
+import static ru.zadvoryev.Constants.OK;
 
 
 public class GetMethodTest {
@@ -20,9 +22,6 @@ public class GetMethodTest {
     @Rule
     WireMockServer wireMockServer;
 
-    final int OK = HttpStatus.SC_OK;
-    final int NOT_FOUND = HttpStatus.SC_NOT_FOUND;
-    final int FORBIDDEN = HttpStatus.SC_FORBIDDEN;
 
     @BeforeEach
     public void setup() {
@@ -38,45 +37,7 @@ public class GetMethodTest {
 
     public void setupStub() {
         configureFor("localhost", 8090);
-        stubFor(get(urlPathMatching("/company/100/users"))
-                .withQueryParam("name", matching("[a-zA-Z]+"))
-                .willReturn(aResponse()
-                        .withHeader("Content-Type", "application/json")
-                        .withStatus(OK)
-                        .withBodyFile("get-user-by-name-response.json")));
-        stubFor(get(urlPathMatching("/company/100/users"))
-                .withQueryParam("name", equalTo(""))
-                .willReturn(aResponse()
-                        .withHeader("Content-Type", "application/json")
-                        .withStatus(OK)
-                        .withBodyFile("get-all-users-in-company-response.json")));
-        stubFor(get(urlEqualTo("/company/100/users?name=Tommy"))
-                .willReturn(aResponse()
-                        .withHeader("Content-Type", "application/json")
-                        .withStatus(OK)
-                        .withBodyFile("get-error-message-if-name-does-not-exist-response.json")));
-        stubFor(get(urlEqualTo("/company/100/users"))
-                .atPriority(1)
-                .willReturn(aResponse()
-                        .withHeader("Content-Type", "application/json")
-                        .withStatus(OK)
-                        .withBodyFile("get-all-users-in-company-response.json")));
-        stubFor(get(urlEqualTo("/company/111/users"))
-                .willReturn(aResponse()
-                        .withHeader("Content-Type", "application/json")
-                        .withStatus(OK)
-                        .withBodyFile("get-there-are-not-users-in-company-response.json")));
-
-        stubFor(get(urlEqualTo("/company/333/users"))
-                .willReturn(aResponse()
-                        .withHeader("Content-Type", "application/json")
-                        .withStatus(NOT_FOUND)
-                        .withBodyFile("get-error-message-if-company-id-does-not-exist-response.json")));
-        stubFor(get(urlEqualTo("/company/100"))
-                .willReturn(aResponse()
-                        .withHeader("Content-Type", "application/json")
-                        .withStatus(OK)
-                        .withBodyFile("get-company-data-by-id-response.json")));
+        SetupStubHepler.setSetup(wireMockServer);
     }
 
     /*
