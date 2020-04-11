@@ -1,0 +1,31 @@
+{
+  "users": [
+    {
+      "id": 999,
+      "name": "Bob",
+      "number": "+7 999 111 22 33",
+      "company": {
+        "id": 100,
+        "companyName": " OOO Magnit"
+      }
+    },
+    {
+      "id": 998,
+      "name": "Tom",
+      "number": "+7 777 222 144 53",
+      "company": {
+        "id": 100,
+        "companyName": " OOO Magnit"
+      }
+    },
+    {
+      "id": 997,
+      "name": "Jack",
+      "number": "+7 999 666 65 87",
+      "company": {
+        "id": 100,
+        "companyName": " OOO Magnit"
+      }
+    }
+  ]
+}
