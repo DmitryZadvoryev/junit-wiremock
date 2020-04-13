@@ -6,16 +6,16 @@
       "number": "+7 999 111 22 33",
       "company": {
         "id": 100,
-        "companyName": " OOO Magnit"
+        "companyName": "Magnit"
       }
     },
     {
       "id": 998,
-      "name": "Tom",
+      "name": "Tom Topmson",
       "number": "+7 777 222 144 53",
       "company": {
         "id": 100,
-        "companyName": " OOO Magnit"
+        "companyName": "Magnit"
       }
     },
     {
@@ -24,7 +24,7 @@
       "number": "+7 999 666 65 87",
       "company": {
         "id": 100,
-        "companyName": " OOO Magnit"
+        "companyName": "Magnit"
       }
     }
   ]

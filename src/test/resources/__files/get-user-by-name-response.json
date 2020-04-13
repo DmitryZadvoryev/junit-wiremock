@@ -1,9 +1,13 @@
 {
-  "id": 999,
-  "name": "Bob",
-  "number": "+7 999 111 22 33",
-  "company": {
-    "id": 100,
-    "companyName": " OOO Magnit"
-  }
+  "users": [
+    {
+      "id": 999,
+      "name": "Bob",
+      "number": "+7 999 111 22 33",
+      "company": {
+        "id": 100,
+        "companyName": "Magnit"
+      }
+    }
+  ]
 }

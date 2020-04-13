@@ -4,24 +4,20 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import io.restassured.response.Response;
 import org.junit.Assert;
 import org.junit.Rule;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import java.util.List;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static io.restassured.RestAssured.given;
-import static ru.zadvoryev.Constants.NOT_FOUND;
-import static ru.zadvoryev.Constants.OK;
-
-
+/*
+ * 2) Implement following scenario for this endpoint using java:
+ * Verify that user can search only member of his own company.
+ */
 public class GetMethodTest {
 
     @Rule
     WireMockServer wireMockServer;
-
 
     @BeforeEach
     public void setup() {
@@ -37,155 +33,104 @@ public class GetMethodTest {
 
     public void setupStub() {
         configureFor("localhost", 8090);
-        SetupStubHepler.setSetup(wireMockServer);
+        stubFor(get(urlEqualTo("/company/100/users"))
+                .withBasicAuth("jack@gmail.com", "12345")
+                .willReturn(aResponse().withStatus(200)
+                        .withBodyFile("get-all-users-in-company-response.json")));
+        stubFor(get(urlPathMatching("/company/100/users"))
+                .withQueryParam("name", matching("([a-zA-Z]+)"))
+                .withBasicAuth("jack@gmail.com", "12345")
+                .willReturn(aResponse().withStatus(200)
+                        .withBodyFile("get-user-by-name-response.json")));
+        stubFor(get(urlEqualTo("/company/100/users"))
+                .withBasicAuth("vasya@mail.ru", "123456")
+                .willReturn(aResponse().withStatus(403)
+                        .withBodyFile("get-error-403-response.json")));
+        stubFor(get(urlPathMatching("/company/100/users"))
+                .withQueryParam("name", matching("([a-zA-Z]+)"))
+                .withBasicAuth("vasya@mail.ru", "123456")
+                .willReturn(aResponse().withStatus(403)
+                        .withBodyFile("get-error-403-response.json")));
     }
 
-    /*
-     * Test will get user data if name param is in lower case
-     */
     @Test
-    @DisplayName("Test №1 will get user data if name param is in lower case")
-    public void getUserDataNameParamLowerCase() {
-        final String expectedName = "Bob";
-        Response response = given()
-                .when()
-                .contentType("application/json")
-                .get("http://localhost:8090/company/100/users?name=bob");
-        verify(getRequestedFor(urlPathMatching("/company/100/users"))
-                .withQueryParam("name", equalTo("bob")));
-        String actualName = response.jsonPath().get("name");
-        int statusCode = response.getStatusCode();
-        Assert.assertEquals(OK, statusCode);
-        Assert.assertEquals(expectedName, actualName);
-    }
+    @DisplayName("Test will receive users data if that user search member of his own company")
+    public void getAllUsersDataByNameHisOwnCompany() {
 
-    /*
-     * Test will get user data if name param is in upper case
-     */
-    @Test
-    @DisplayName("Test №2 will get user data if name param is in upper case")
-    public void getUserDataNameParamUpperCase() {
-        final String expectedName = "Bob";
-        Response response = given()
-                .when()
-                .contentType("application/json")
-                .get("http://localhost:8090/company/100/users?name=BOB");
-        verify(getRequestedFor(urlPathMatching("/company/100/users"))
-                .withQueryParam("name", equalTo("BOB")));
-        String actualName = response.jsonPath().get("name");
-        int statusCode = response.getStatusCode();
-        Assert.assertEquals(OK, statusCode);
-        Assert.assertEquals(expectedName, actualName);
-    }
+        final String encodedString = "amFja0BnbWFpbC5jb206MTIzNDU=";
+        final int expectedSize = 3;
+        final int expectedStatusCode = 200;
 
-    /*
-     * Test will get users data if name param is in empty
-     */
-    @Test
-    @DisplayName("Test №3 will get users data if name param is in empty")
-    public void getUsersDataIfNameParamEmpty() {
-        final int expected = 3;
         Response response = given()
+                .header("Authorization", "Basic " + encodedString)
                 .when()
-                .contentType("application/json")
-                .get("http://localhost:8090/company/100/users?name=");
-        verify(getRequestedFor(urlPathMatching("/company/100/users"))
-                .withQueryParam("name", equalTo("")));
-        List<String> actual = response.jsonPath().getList("users");
-        int statusCode = response.getStatusCode();
-        Assert.assertEquals(OK, statusCode);
-        Assert.assertEquals(expected, actual.size());
-    }
-
-    /*
-     * Test will receive error message if name does not exist
-     */
-    @Test
-    @DisplayName("Test №4 will receive error message if name does not exist")
-    public void getErrorMessageNameDoesNotExist() {
-        final String expectedMessage = "User not found";
-        Response response = given()
-                .when()
-                .contentType("application/json")
-                .get("http://localhost:8090/company/100/users?name=Tommy");
-        verify(getRequestedFor(urlEqualTo("/company/100/users?name=Tommy")));
-        String actualMessage = response.jsonPath().get("message");
-        int statusCode = response.getStatusCode();
-        Assert.assertEquals(OK, statusCode);
-        Assert.assertEquals(expectedMessage, actualMessage);
-    }
-
-    /*
-       Test will receive all users in the company
-   */
-    @Test
-    @DisplayName("Test №5 will receive all users in the company")
-    public void getAllUsersInCompany() {
-        final int expected = 3;
-        Response response = given()
-                .when()
-                .contentType("application/json")
                 .get("http://localhost:8090/company/100/users");
-        verify(getRequestedFor(urlEqualTo("/company/100/users")));
-        List<String> actual = response.jsonPath().getList("users");
-        int statusCode = response.getStatusCode();
-        Assert.assertEquals(OK, statusCode);
-        Assert.assertEquals(expected, actual.size());
+
+        int actualStatusCode = response.statusCode();
+        List<Object> users = response.jsonPath().getList("users");
+
+        Assert.assertEquals(expectedStatusCode, actualStatusCode);
+        Assert.assertEquals(expectedSize, users.size());
     }
 
 
-    /*
-        Test will receive error message if company does not exist
-     */
     @Test
-    @DisplayName("Test №6 will receive error message if company does not exist")
-    public void getErrorMessageIfCompanyIdDoesNotExist() {
-        final String expectedMessage = "Company not found";
+    @DisplayName("Test will receive user data if that user search member of his own company")
+    public void getUserDataByNameHisOwnCompany() {
+
+        final String encodedString = "amFja0BnbWFpbC5jb206MTIzNDU=";
+        final String expectedName = "Bob";
+        final int expectedStatusCode = 200;
+
         Response response = given()
+                .header("Authorization", "Basic " + encodedString)
                 .when()
-                .contentType("application/json")
-                .get("http://localhost:8090/company/333/users");
-        verify(getRequestedFor(urlEqualTo("/company/333/users")));
+                .get("http://localhost:8090/company/100/users?name=Bob");
+
+        int actualStatusCode = response.statusCode();
+        String actualName = response.jsonPath().get("users.name[0]");
+
+        Assert.assertEquals(expectedStatusCode, actualStatusCode);
+        Assert.assertEquals(expectedName, actualName);
+    }
+
+    @Test
+    @DisplayName("Test will not receive users data if that user search member of not his own company")
+    public void getAllUsersDataByNameNotHisOwnCompany() {
+
+        final String encodedString = "dmFzeWFAbWFpbC5ydToxMjM0NTY=";
+        final String expectedMessage = "Access denied for user";
+        final int expectedStatusCode = 403;
+
+        Response response = given()
+                .header("Authorization", "Basic " + encodedString)
+                .when()
+                .get("http://localhost:8090/company/100/users");
+
+        int actualStatusCode = response.statusCode();
         String actualMessage = response.jsonPath().get("message");
-        int statusCode = response.getStatusCode();
-        Assert.assertEquals(NOT_FOUND, statusCode);
+
+        Assert.assertEquals(expectedStatusCode, actualStatusCode);
         Assert.assertEquals(expectedMessage, actualMessage);
     }
 
-
-    /*
-        There are not users in the company
-     */
     @Test
-    @DisplayName("Test №7 There are not users in the company")
-    public void getThereAreNotUsersInTheCompany() {
-        Response response = given()
-                .when()
-                .contentType("application/json")
-                .get("http://localhost:8090/company/111/users");
-        verify(getRequestedFor(urlEqualTo("/company/111/users")));
-        List<String> actual = response.jsonPath().getList("users");
-        int statusCode = response.getStatusCode();
-        Assert.assertEquals(OK, statusCode);
-        Assert.assertTrue(actual.isEmpty());
-    }
+    @DisplayName("Test will not receive user data if that user search member of not his own company")
+    public void getUserDataByNameNotHisOwnCompany() {
 
-    /*
-       Test will receive company data by id
-    */
-    @Test
-    @DisplayName("Test №8 will receive company data by id")
-    public void getCompanyDataById() {
-        final String expectedName = "OOO Magnit";
+        final String encodedString = "dmFzeWFAbWFpbC5ydToxMjM0NTY=";
+        final String expectedMessage = "Access denied for user";
+        final int expectedStatusCode = 403;
+
         Response response = given()
+                .header("Authorization", "Basic " + encodedString)
                 .when()
-                .contentType("application/json")
-                .get("http://localhost:8090/company/100");
-        verify(getRequestedFor(urlEqualTo("/company/100")));
-        String actual = response.jsonPath().get("name");
-        int statusCode = response.getStatusCode();
-        Assert.assertEquals(OK, statusCode);
-        Assert.assertEquals(expectedName, actual);
+                .get("http://localhost:8090/company/100/users?name=Bob");
+
+        int actualStatusCode = response.statusCode();
+        String actualMessage = response.jsonPath().get("message");
+
+        Assert.assertEquals(expectedStatusCode, actualStatusCode);
+        Assert.assertEquals(expectedMessage, actualMessage);
     }
 }
-
